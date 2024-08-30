@@ -1,15 +1,17 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <errno.h>
-#include <string.h>
+/**
+ * @file smartpowercli.c
+ * @brief Command-line interface for interacting with a the Odroid Smart Power 1.
+ * 
+ * Usage: ./smartpowercli <path to device descriptor> <command>
+ * Commands: onoff startstop status data version
+ * 
+ * Example: ./smartpowercli /dev/hidraw0 onoff
+ */
 
-#define REQUEST_DATA        0x37
-#define REQUEST_STARTSTOP   0x80
-#define REQUEST_STATUS      0x81
-#define REQUEST_ONOFF       0x82
-#define REQUEST_VERSION     0x83
+#include "smartpowercli.h"
+#include <stdio.h>
+
+int open_device(const char* device_path);
 
 int main(int argc, char *argv[]) 
 {
@@ -34,9 +36,8 @@ int main(int argc, char *argv[])
     }
     char* device = argv[1];
 
-    fd = open(device, O_RDWR);
+    fd = open_device(device);
     if (fd < 0) {
-        fprintf(stderr, "Error opening %s: %s\n", device, strerror(errno));
         return 1;
     }
 
@@ -47,56 +48,50 @@ int main(int argc, char *argv[])
     else if (strcmp(argv[2], "startstop") == 0) 
     {
         tx = REQUEST_STARTSTOP;
-        ssize_t bytes_written = write(fd, &tx, sizeof(tx));
+        ssize_t bytes_written = send_request(device, tx);
         if (bytes_written < 0) 
         {
-            fprintf(stderr, "Error writing to %s: %s\n", device, strerror(errno));
             return 1;
         }
-    } 
+    }       
     else if (strcmp(argv[2], "status") == 0) 
     {
         tx = REQUEST_STATUS;
-        ssize_t bytes_written = write(fd, &tx, sizeof(tx));
+        ssize_t bytes_written = send_request(device, tx);
         if (bytes_written < 0) 
         {
-            fprintf(stderr, "Error writing to %s: %s\n", device, strerror(errno));
             return 1;
         }
 
-        bytes_read = read(fd, buf, sizeof(buf));
+        bytes_read = read_response(device, buf, sizeof(buf));
         if (bytes_read < 0) 
         {
-            fprintf(stderr, "Error reading from %s: %s\n", device, strerror(errno));
             return 1;
         }
         printf("Status:\n");
-        printf("  Power: %s\n", buf[1] ? "on" : "off");
-        printf("  Start/Stop: %s\n", buf[2] ? "on" : "off");
+        printf("  Start/stop: %s\n", buf[1] ? "on" : "off");
+        printf("  On/off: %s\n", buf[2] ? "on" : "off");
     } 
     else if (strcmp(argv[2], "onoff") == 0) 
     {
         tx = REQUEST_ONOFF;
-        ssize_t bytes_written = write(fd, &tx, sizeof(tx));
+        ssize_t bytes_written = send_request(device, tx);
         if (bytes_written < 0) 
         {
-            fprintf(stderr, "Error writing to %s: %s\n", device, strerror(errno));
             return 1;
         }
     } 
     else if (strcmp(argv[2], "version") == 0) 
     {
         tx = REQUEST_VERSION;
-        ssize_t bytes_written = write(fd, &tx, sizeof(tx));
+        ssize_t bytes_written = send_request(device, tx);
         if (bytes_written < 0) {
-            fprintf(stderr, "Error writing to %s: %s\n", device, strerror(errno));
             return 1;
         }
 
-        bytes_read = read(fd, buf, sizeof(buf));
+        bytes_read = read_response(device, buf, sizeof(buf));
         if (bytes_read < 0) 
         {
-            fprintf(stderr, "Error reading from %s: %s\n", device, strerror(errno));
             return 1;
         }
         char version[12];
@@ -109,8 +104,46 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    return 0;
+}
+
+int open_device(const char* device_path) 
+{
+    int fd = open(device_path, O_RDWR);
+    if (fd < 0) {
+        fprintf(stderr, "Error opening %s: %s\n", device_path, strerror(errno));
+        return 1;
+    }
+    return fd;
+}
+
+ssize_t send_request(const char* device_path, int request)
+{
+    int fd = open_device(device_path);
+
+    ssize_t size = sizeof(request);
+    ssize_t bytes_written = write(fd, &request, size);
+
     close(fd);
 
-    printf("Request %s sent successfully.\n", argv[1]);
-    return 0;
+    if (bytes_written < 0) {
+        fprintf(stderr, "Error writing to device: %s\n", strerror(errno));
+        return 1;
+    }
+    return bytes_written;
+}
+
+ssize_t read_response(const char * device_path, unsigned char* buf, size_t buf_size)
+{
+    int fd = open_device(device_path);
+
+    ssize_t bytes_read = read(fd, buf, buf_size);
+
+    close(fd);
+
+    if (bytes_read < 0) {
+        fprintf(stderr, "Error reading from device: %s\n", strerror(errno));
+        return 1;
+    }
+    return bytes_read;
 }

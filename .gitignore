@@ -5,6 +5,7 @@
 *.code-workspace
 
 # Ignore build files
+build/
 *.o
 *.obj
 *.exe
