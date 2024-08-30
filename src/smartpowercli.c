@@ -10,6 +10,7 @@
 
 #include "smartpowercli.h"
 #include <stdio.h>
+#include <string.h>
 
 int open_device(const char* device_path);
 
@@ -44,6 +45,33 @@ int main(int argc, char *argv[])
     if (strcmp(argv[2], "data") == 0) 
     {
         tx = REQUEST_DATA;
+
+        ssize_t bytes_written = send_request(device, tx);
+        if (bytes_written < 0) 
+        {
+            return 1;
+        }
+
+        bytes_read = read_response(device, buf, sizeof(buf));
+        if (bytes_read < 0) 
+        {
+            return 1;
+        }
+
+        char voltage[12];
+        char amperage[12];
+        char wattage[12];
+        char watthour[12];
+        strncpy(voltage, (char*)&buf[2], 5);
+        strncpy(amperage, (char*)&buf[10], 5);
+        strncpy(wattage, (char*)&buf[17], 6);
+        strncpy(watthour, (char*)&buf[24], 7);
+
+        printf("Data:\n");
+        printf("  Voltage: %.3f V\n", atof(voltage));
+        printf("  Amperage: %.3f A\n", atof(amperage));
+        printf("  Wattage: %.3f W\n", atof(wattage));
+        printf("  Watthour: %.3f Wh\n", atof(watthour));
     } 
     else if (strcmp(argv[2], "startstop") == 0) 
     {

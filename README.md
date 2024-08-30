@@ -23,6 +23,8 @@ status : Returns the status of the PSU
 
 version : Returns the FW version
 
+data: Returns output voltage, current, power and consumed energy
+
 
 ### Building
 
