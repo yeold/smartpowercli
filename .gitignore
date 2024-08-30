@@ -1,0 +1,46 @@
+# .gitignore for Visual Studio Code and C projects
+
+# Ignore Visual Studio Code specific files
+.vscode/
+*.code-workspace
+
+# Ignore build files
+*.o
+*.obj
+*.exe
+*.out
+*.a
+*.so
+*.dll
+*.dylib
+
+# Ignore dependency directories
+node_modules/
+vendor/
+
+# Ignore logs and temporary files
+*.log
+*.tmp
+*.swp
+*.swo
+*.bak
+
+# Ignore compiled binary files
+*.bin
+*.elf
+
+# Ignore coverage reports
+coverage/
+*.gcda
+*.gcno
+*.gcov
+
+# Ignore IDE specific files
+.idea/
+*.iml
+
+# Ignore CMake generated files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
